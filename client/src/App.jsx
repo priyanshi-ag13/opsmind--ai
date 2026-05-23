@@ -24,7 +24,7 @@ function App() {
       const data = await response.json();
 
       setMessage(data.message);
-      setText(data.extractedText);
+      setText(data.chunks.join("\n\n------------------\n\n"));
     } catch (error) {
       console.log(error);
 
@@ -57,6 +57,10 @@ function App() {
       </button>
 
       <p>{message}</p>
+
+<p>
+  Total Chunks: {text ? text.split("------------------").length : 0}
+</p>
       <textarea
       value={text}
       readOnly

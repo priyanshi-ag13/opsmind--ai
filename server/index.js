@@ -44,12 +44,32 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
 
     // EXTRACT TEXT
     const pdfData = await pdf(dataBuffer);
+    // FULL TEXT
+const fullText = pdfData.text;
+
+
+// CHUNK SIZE
+const chunkSize = 500;
+
+
+// ARRAY TO STORE CHUNKS
+const chunks = [];
+
+
+// LOOP TO CREATE CHUNKS
+for (let i = 0; i < fullText.length; i += chunkSize) {
+
+  const chunk = fullText.slice(i, i + chunkSize);
+
+  chunks.push(chunk);
+}
 
     // SEND RESPONSE
-    res.status(200).json({
-      message: "PDF uploaded and text extracted successfully",
-      extractedText: pdfData.text,
-    });
+   res.status(200).json({
+  message: "PDF chunking completed successfully",
+  totalChunks: chunks.length,
+  chunks: chunks,
+});
 
   } catch (error) {
 
