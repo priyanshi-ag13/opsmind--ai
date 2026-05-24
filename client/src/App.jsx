@@ -6,6 +6,7 @@ function App() {
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
 
   const handleUpload = async () => {
     if (!pdf) {
@@ -52,7 +53,15 @@ const handleSearch = async () => {
 
     const data = await response.json();
 
-    setAnswer(data.answer);
+    setChatHistory((prev) => [
+  ...prev,
+  {
+    question: query,
+    answer: data.answer,
+  },
+]);
+
+setQuery("");
 
   } catch (error) {
 
@@ -111,7 +120,24 @@ const handleSearch = async () => {
   Search
 </button>
 
-<p>{answer}</p>
+<div>
+
+  {chatHistory.map((chat, index) => (
+
+    <div key={index}>
+
+      <h3>User:</h3>
+      <p>{chat.question}</p>
+
+      <h3>AI:</h3>
+      <p>{chat.answer}</p>
+
+      <hr />
+
+    </div>
+  ))}
+
+</div>
     </div>
   );
 }
