@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -5,6 +6,8 @@ const fs = require("fs");
 const pdf = require("pdf-parse");
 
 const app = express();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -25,6 +28,8 @@ const storage = multer.diskStorage({
 // MULTER INSTANCE
 const upload = multer({ storage });
 
+let storedChunks = [];
+let storedEmbeddings = [];
 
 // TEST ROUTE
 app.get("/", (req, res) => {
@@ -63,12 +68,90 @@ for (let i = 0; i < fullText.length; i += chunkSize) {
 
   chunks.push(chunk);
 }
+const embeddings = chunks.map(chunk => {
+
+  return chunk
+    .split("")
+    .map(char => char.charCodeAt(0));
+});
+storedChunks = chunks;
+storedEmbeddings = embeddings;
 
     // SEND RESPONSE
    res.status(200).json({
-  message: "PDF chunking completed successfully",
+  message: "Embeddings generated successfully",
   totalChunks: chunks.length,
-  chunks: chunks,
+  totalEmbeddings: embeddings.length,
+});
+app.post("/search", async (req, res) => {
+
+  try {
+
+    const { query } = req.body;
+
+    const queryEmbedding = query
+  .split("")
+  .map(char => char.charCodeAt(0));
+
+
+    let bestScore = -1;
+
+    let bestChunk = "";
+
+
+    // COMPARE ALL CHUNKS
+    for (let i = 0; i < storedEmbeddings.length; i++) {
+
+      const chunkEmbedding = storedEmbeddings[i];
+
+      let score = 0;
+
+
+      for (let j = 0; j < queryEmbedding.length; j++) {
+
+        score += queryEmbedding[j] * chunkEmbedding[j];
+      }
+
+
+      if (score > bestScore) {
+
+        bestScore = score;
+
+        bestChunk = storedChunks[i];
+      }
+    }
+
+
+    const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
+});
+
+const prompt = `
+Answer the user's question using the context below.
+
+Context:
+${bestChunk}
+
+Question:
+${query}
+`;
+
+const resultText = await model.generateContent(prompt);
+
+const finalAnswer = resultText.response.text();
+
+res.status(200).json({
+  message: "AI answer generated",
+  answer: finalAnswer,
+});
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      message: "Search failed",
+    });
+  }
 });
 
   } catch (error) {

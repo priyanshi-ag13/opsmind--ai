@@ -4,6 +4,8 @@ function App() {
   const [pdf, setPdf] = useState(null);
   const [message, setMessage] = useState("");
   const [text, setText] = useState("");
+  const [query, setQuery] = useState("");
+  const [answer, setAnswer] = useState("");
 
   const handleUpload = async () => {
     if (!pdf) {
@@ -24,14 +26,41 @@ function App() {
       const data = await response.json();
 
       setMessage(data.message);
-      setText(data.chunks.join("\n\n------------------\n\n"));
+     setText(`Total Embeddings Generated: ${data.totalEmbeddings}`);
     } catch (error) {
       console.log(error);
 
       setMessage("Upload failed");
     }
   };
+const handleSearch = async () => {
 
+  try {
+
+    const response = await fetch("http://localhost:5000/search", {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        query,
+      }),
+    });
+
+    const data = await response.json();
+
+    setAnswer(data.answer);
+
+  } catch (error) {
+
+    console.log(error);
+
+    setAnswer("Search failed");
+  }
+};
   return (
     <div
       style={{
@@ -67,6 +96,22 @@ function App() {
       rows={15}
       cols={100}
       />
+      <hr />
+
+<h2>Ask Question</h2>
+
+<input
+  type="text"
+  placeholder="Ask something from PDF..."
+  value={query}
+  onChange={(e) => setQuery(e.target.value)}
+/>
+
+<button onClick={handleSearch}>
+  Search
+</button>
+
+<p>{answer}</p>
     </div>
   );
 }
